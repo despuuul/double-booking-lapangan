@@ -1,0 +1,42 @@
+import com.kms.katalon.core.database.Database
+import groovy.sql.Sql
+
+//config db
+def dbUrl = 'jdbc:sqlite:path_to_your_database.db'
+def user = 'AYO1A'
+def password = 'Ay0@11'
+def sql = Sql.newInstance(dbUrl, user, password, 'org.sqlite.JDBC')
+
+//data new booking
+def newBooking = [
+    venue_id: 15,
+    user_id: 'USER123',
+    start_time: '2022-12-10 09:00:00',
+    end_time: '2022-12-10 10:00:00'
+]
+
+//query untuk cek double booking
+def checkDoubleBookingQuery = """
+    SELECT * FROM bookings 
+    WHERE venue_id = ${newBooking.venue_id} 
+    AND (
+        (start_time < '${newBooking.end_time}' AND end_time > '${newBooking.start_time}')
+    )
+"""
+
+def result = sql.rows(checkDoubleBookingQuery)
+
+if (result) {
+    println("Booking gagal: Terdapat double booking pada waktu yang sama.")
+} else {
+    // Jika tidak ada tabrakan, tambahkan booking
+    def insertBookingQuery = """
+        INSERT INTO bookings (venue_id, user_id, start_time, end_time) 
+        VALUES (${newBooking.venue_id}, '${newBooking.user_id}', '${newBooking.start_time}', '${newBooking.end_time}')
+    """
+    sql.execute(insertBookingQuery)
+    println("Booking berhasil ditambahkan.")
+}
+
+//close connection
+sql.close()
